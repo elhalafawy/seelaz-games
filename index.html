@@ -1497,17 +1497,28 @@ function pcMoveEntity(e, speed, chooseDirFn) {
   }
 }
 
-// Player stops at every tile — only moves on explicit button press (nextDir)
-// nextDir is NOT consumed on wall-hit, so pre-buffering a turn still works
+// Classic Pac-Man movement:
+// - Try buffered turn first; if clear → apply it
+// - Otherwise keep sliding in current direction
+// - nextDir stays buffered until the turn is possible
 function pcChoosePlayerDir(p) {
-  if (!p.nextDir) return null;  // no input = stay put
-  const [dc, dr] = PC_DVEC[p.nextDir];
-  if (pcCanEnter(p.col + dc, p.row + dr, false)) {
-    p.dir = p.nextDir;
-    p.nextDir = null;  // consume the input after successful move
-    return p.dir;
+  // 1. Try the buffered (new) direction
+  if (p.nextDir) {
+    const [dc, dr] = PC_DVEC[p.nextDir];
+    if (pcCanEnter(p.col + dc, p.row + dr, false)) {
+      p.dir = p.nextDir;
+      p.nextDir = null;
+      return p.dir;
+    }
   }
-  return null;  // wall ahead — keep nextDir buffered, try again next tile
+  // 2. Continue in current direction
+  if (p.dir) {
+    const [dc, dr] = PC_DVEC[p.dir];
+    if (pcCanEnter(p.col + dc, p.row + dr, false)) {
+      return p.dir;
+    }
+  }
+  return null; // wall in both directions — stay put
 }
 
 function pcChooseGhostDir(g) {
