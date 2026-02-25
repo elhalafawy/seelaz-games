@@ -1359,12 +1359,16 @@ function timeOutGame() {
   }, 1300);
 }
 
-// ── Maze scoring: speed 60% + optimal path 40% ──────────
+// ── Maze scoring: speed 50% + path efficiency 50% ───────
+// Ratio-based so any maze size is equally fair.
+// Perfect path (steps === optimal) → efficiency = 500 pts.
+// 10% extra steps → ~476 pts, 2× optimal → 354 pts.
 function calcMazeScore(steps, secs) {
   const limit    = MAZE_TIME_LIMIT[chosenDiff];
   const sc       = CFG.scoring.maze;
   const speedPts = sc.speedWeight * Math.max(0, 1 - secs / limit);
-  const effPts   = Math.max(0, sc.effWeight - Math.max(0, steps - mazeOptimal) * sc.extraStepPenalty);
+  const ratio    = Math.min(1, mazeOptimal / Math.max(1, steps));
+  const effPts   = Math.round(sc.effWeight * Math.sqrt(ratio));
   return Math.max(50, Math.round(speedPts + effPts));
 }
 function calcMazeStars(steps, secs) {
