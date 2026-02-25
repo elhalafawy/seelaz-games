@@ -460,7 +460,7 @@
   <div class="dpad">
     <button class="dpad-btn" style="grid-column:2;grid-row:1" onpointerdown="pcDir('up')">↑</button>
     <button class="dpad-btn" style="grid-column:1;grid-row:2" onpointerdown="pcDir('left')">←</button>
-    <div class="dpad-btn dpad-center" style="grid-column:2;grid-row:2">🦆</div>
+    <div class="dpad-btn dpad-center" style="grid-column:2;grid-row:2">&#x1F989;</div>
     <button class="dpad-btn" style="grid-column:3;grid-row:2" onpointerdown="pcDir('right')">→</button>
     <button class="dpad-btn" style="grid-column:2;grid-row:3" onpointerdown="pcDir('down')">↓</button>
   </div>
@@ -1447,7 +1447,7 @@ function initPacChick() {
 }
 
 function pcUpdateLives() {
-  document.getElementById('pc-lives-val').textContent = '�'.repeat(Math.max(0, pcLives));
+  document.getElementById('pc-lives-val').textContent = '🦉'.repeat(Math.max(0, pcLives));
 }
 
 function pcTick() {
@@ -1497,26 +1497,17 @@ function pcMoveEntity(e, speed, chooseDirFn) {
   }
 }
 
-// Stop-on-tile movement:
-// - Only moves when player presses a direction (nextDir set)
-// - nextDir stays buffered if direction is blocked (wall)
-// - nextDir consumed only when move succeeds
+// Pure stop-on-tile: press direction → move once → stop.
+// nextDir stays buffered until the move succeeds (wall relief).
 function pcChoosePlayerDir(p) {
-  if (!p.nextDir) return null;  // no input — stay put
+  if (!p.nextDir) return null;  // no input — stay still
   const [dc, dr] = PC_DVEC[p.nextDir];
   if (pcCanEnter(p.col + dc, p.row + dr, false)) {
     p.dir = p.nextDir;
-    p.nextDir = null;  // consume only on success
+    p.nextDir = null;  // consume after successful move
     return p.dir;
   }
-  // Also try current direction if nextDir is blocked (feels less sticky)
-  if (p.dir && p.dir !== p.nextDir) {
-    const [dc2, dr2] = PC_DVEC[p.dir];
-    if (pcCanEnter(p.col + dc2, p.row + dr2, false)) {
-      return p.dir;  // keep sliding, nextDir stays buffered for next junction
-    }
-  }
-  return null;
+  return null;  // wall — stay put, keep nextDir buffered
 }
 
 function pcChooseGhostDir(g) {
@@ -1747,9 +1738,8 @@ function pcRender() {
     }
   }
 
-  // Emoji font for player + frightened ghosts
+  // Emoji font for frightened ghosts
   const ef = `${Math.max(10, Math.round(ts*0.85))}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-  const pfont = `${Math.max(12, Math.round(ts*1.05))}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
   // Ghosts
@@ -1773,14 +1763,32 @@ function pcRender() {
     }
   }
 
-  // Player
+  // Player — drawn as canvas owl (brown circle + ear tufts + eyes)
   if (pcPlayer && pcPlayer.alive) {
     const px = (pcPlayer.fromCol + (pcPlayer.toCol-pcPlayer.fromCol)*pcPlayer.t)*ts + ts/2;
     const py = (pcPlayer.fromRow + (pcPlayer.toRow-pcPlayer.fromRow)*pcPlayer.t)*ts + ts/2;
-    ctx.font = pfont;
+    const r = ts * 0.38;
+    // body
+    ctx.fillStyle = '#8B5E3C';
     ctx.shadowColor = '#FFD700'; ctx.shadowBlur = ts*0.4;
-    ctx.fillText('🦉', px, py);
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
     ctx.shadowBlur = 0;
+    // ear tufts
+    ctx.fillStyle = '#6B3F1E';
+    const ta = 0.42;
+    ctx.beginPath(); ctx.moveTo(px - r*0.45, py - r*0.75); ctx.lineTo(px - r*0.7, py - r*1.35); ctx.lineTo(px - r*0.15, py - r*0.85); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(px + r*0.45, py - r*0.75); ctx.lineTo(px + r*0.7, py - r*1.35); ctx.lineTo(px + r*0.15, py - r*0.85); ctx.closePath(); ctx.fill();
+    // eyes
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath(); ctx.arc(px - r*0.35, py - r*0.1, r*0.23, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px + r*0.35, py - r*0.1, r*0.23, 0, Math.PI*2); ctx.fill();
+    // pupils
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.arc(px - r*0.33, py - r*0.08, r*0.11, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px + r*0.37, py - r*0.08, r*0.11, 0, Math.PI*2); ctx.fill();
+    // beak
+    ctx.fillStyle = '#E8A020';
+    ctx.beginPath(); ctx.moveTo(px, py + r*0.12); ctx.lineTo(px - r*0.14, py + r*0.32); ctx.lineTo(px + r*0.14, py + r*0.32); ctx.closePath(); ctx.fill();
   }
 }
 
