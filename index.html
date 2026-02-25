@@ -967,6 +967,30 @@ function generateMaze(cols, rows) {
     grid[pick.nr][pick.nc].visited = true;
     stack.push(grid[pick.nr][pick.nc]);
   }
+
+  // Brading: remove extra walls to create loops — makes multiple paths, much more confusing
+  // More walls removed = harder to find optimal route
+  const braidRate = { easy: 0.12, medium: 0.28, hard: 0.45 }[chosenDiff] || 0.2;
+  const candidates = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      // Only collect south and east walls to avoid duplicates
+      if (r < rows-1 && grid[r][c].walls['S']) candidates.push({c, r, d:'S', o:'N', nc:c,   nr:r+1});
+      if (c < cols-1 && grid[r][c].walls['E']) candidates.push({c, r, d:'E', o:'W', nc:c+1, nr:r  });
+    }
+  }
+  // Shuffle candidates then remove first braidRate fraction
+  for (let i = candidates.length-1; i > 0; i--) {
+    const j = 0 | Math.random() * (i+1);
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  const removeCount = Math.round(candidates.length * braidRate);
+  for (let i = 0; i < removeCount; i++) {
+    const {c, r, d, o, nc, nr} = candidates[i];
+    grid[r][c].walls[d]   = false;
+    grid[nr][nc].walls[o] = false;
+  }
+
   return grid;
 }
 
