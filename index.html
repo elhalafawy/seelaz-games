@@ -299,7 +299,7 @@
     </div>
 
     <div class="game-card" id="card-pacchick" onclick="selectGame('pacchick')">
-      <span class="gc-icon">🐥</span>
+      <span class="gc-icon">🦆</span>
       <div class="gc-name">باك تشيك</div>
       <div class="gc-desc">كل النقاط وابعد عن الأشباح!</div>
     </div>
@@ -433,7 +433,7 @@
 ════════════════════════════════════════ -->
 <div id="pacchick-screen">
   <div class="game-header maze-header">
-    <div class="game-owl">🐥</div>
+    <div class="game-owl">🦆</div>
     <div class="game-title" id="pc-game-title">Pac <span>Chick</span></div>
     <div class="diff-badge" id="pc-diff-badge"></div>
   </div>
@@ -445,7 +445,7 @@
     </div>
     <div class="stat-box">
       <div class="stat-label" id="pc-lbl-lives">أرواح</div>
-      <div class="stat-value" id="pc-lives-val">🐥🐥🐥</div>
+      <div class="stat-value" id="pc-lives-val">🦆🦆🦆</div>
     </div>
     <div class="stat-box">
       <div class="stat-label" id="pc-lbl-time">وقت</div>
@@ -460,7 +460,7 @@
   <div class="dpad">
     <button class="dpad-btn" style="grid-column:2;grid-row:1" onpointerdown="pcDir('up')">↑</button>
     <button class="dpad-btn" style="grid-column:1;grid-row:2" onpointerdown="pcDir('left')">←</button>
-    <div class="dpad-btn dpad-center" style="grid-column:2;grid-row:2">🐥</div>
+    <div class="dpad-btn dpad-center" style="grid-column:2;grid-row:2">🦆</div>
     <button class="dpad-btn" style="grid-column:3;grid-row:2" onpointerdown="pcDir('right')">→</button>
     <button class="dpad-btn" style="grid-column:2;grid-row:3" onpointerdown="pcDir('down')">↓</button>
   </div>
@@ -544,7 +544,7 @@ const CFG = {
       descAr:'وصّل البومة للقهوة عبر المتاهة',
     },
     pacchick: {
-      nameEn:'Pac-Chick', nameAr:'باك تشيك', icon:'🐥',
+      nameEn:'Pac-Chick', nameAr:'باك تشيك', icon:'🦆',
       descEn:'Eat all the pellets and dodge the ghosts!',
       descAr:'كل كل النقاط وابعد عن الأشباح!',
     },
@@ -624,7 +624,7 @@ const T = {
     memorize:  '👀 احفظ الكروت!',
     restart:   '🔄 إعادة',  goHome: '🏠 الرئيسية',
     winTitle:  '🎉 ممتاز!',
-    winSubMem: 'وجدت كل الأزواج! 🃏',  winSubMaze: 'البومة وصلت للقهوة! ☕',  winSubPacchick: 'أكلت كل النقاط! 🐥',
+    winSubMem: 'وجدت كل الأزواج! 🃏',  winSubMaze: 'البومة وصلت للقهوة! ☕',  winSubPacchick: 'أكلت كل النقاط! 🦉',
     lMoves: 'حركات',  lSteps: 'خطوات',  lTime: 'وقت',  lScore: 'نقاط',  lBest: '🏆 أفضل',
     playAgain: '☕ العب تاني',  codeLabel: 'كود الخصم',
     timeout:   'انتهى الوقت!',
@@ -649,7 +649,7 @@ const T = {
     memorize:  '👀 Memorize!',
     restart:   '🔄 Restart',  goHome: '🏠 Home',
     winTitle:  '🎉 Excellent!',
-    winSubMem: 'All card pairs matched! 🃏',  winSubMaze: 'The owl reached the coffee! ☕',  winSubPacchick: 'All pellets eaten! 🐥',
+    winSubMem: 'All card pairs matched! 🃏',  winSubMaze: 'The owl reached the coffee! ☕',  winSubPacchick: 'All pellets eaten! 🦉',
     lMoves: 'Moves',  lSteps: 'Steps',  lTime: 'Time',  lScore: 'Score',  lBest: '🏆 Best',
     playAgain: '☕ Play Again',  codeLabel: 'Discount Code',
     timeout:   "Time's up!",
@@ -1447,7 +1447,7 @@ function initPacChick() {
 }
 
 function pcUpdateLives() {
-  document.getElementById('pc-lives-val').textContent = '🐥'.repeat(Math.max(0, pcLives));
+  document.getElementById('pc-lives-val').textContent = '🦆'.repeat(Math.max(0, pcLives));
 }
 
 function pcTick() {
@@ -1497,12 +1497,17 @@ function pcMoveEntity(e, speed, chooseDirFn) {
   }
 }
 
+// Player stops at every tile — only moves on explicit button press (nextDir)
+// nextDir is NOT consumed on wall-hit, so pre-buffering a turn still works
 function pcChoosePlayerDir(p) {
-  for (const d of [p.nextDir, p.dir]) {
-    const [dc, dr] = PC_DVEC[d];
-    if (pcCanEnter(p.col + dc, p.row + dr, false)) { p.dir = d; return d; }
+  if (!p.nextDir) return null;  // no input = stay put
+  const [dc, dr] = PC_DVEC[p.nextDir];
+  if (pcCanEnter(p.col + dc, p.row + dr, false)) {
+    p.dir = p.nextDir;
+    p.nextDir = null;  // consume the input after successful move
+    return p.dir;
   }
-  return null;
+  return null;  // wall ahead — keep nextDir buffered, try again next tile
 }
 
 function pcChooseGhostDir(g) {
@@ -1714,7 +1719,7 @@ function pcRender() {
     const py = (pcPlayer.fromRow + (pcPlayer.toRow-pcPlayer.fromRow)*pcPlayer.t)*ts + ts/2;
     ctx.font = ef;
     ctx.shadowColor = '#FFD700'; ctx.shadowBlur = ts*0.4;
-    ctx.fillText('🐥', px, py);
+    ctx.fillText('🦆', px, py);
     ctx.shadowBlur = 0;
   }
 }
