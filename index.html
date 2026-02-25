@@ -300,7 +300,7 @@
 
     <div class="game-card" id="card-pacchick" onclick="selectGame('pacchick')">
       <span class="gc-icon">🦆</span>
-      <div class="gc-name">باك تشيك</div>
+      <div class="gc-name">باك البومة</div>
       <div class="gc-desc">كل النقاط وابعد عن الأشباح!</div>
     </div>
 
@@ -429,12 +429,12 @@
 </div>
 
 <!-- ═══════════════════════════════════════
-     PAC-CHICK GAME SCREEN
+     PAC-OWL GAME SCREEN
 ════════════════════════════════════════ -->
 <div id="pacchick-screen">
   <div class="game-header maze-header">
-    <div class="game-owl">🦆</div>
-    <div class="game-title" id="pc-game-title">Pac <span>Chick</span></div>
+    <div class="game-owl">�</div>
+    <div class="game-title" id="pc-game-title">Pac-<span>Owl</span></div>
     <div class="diff-badge" id="pc-diff-badge"></div>
   </div>
 
@@ -544,7 +544,7 @@ const CFG = {
       descAr:'وصّل البومة للقهوة عبر المتاهة',
     },
     pacchick: {
-      nameEn:'Pac-Chick', nameAr:'باك تشيك', icon:'🦆',
+      nameEn:'Pac-Owl', nameAr:'باك البومة', icon:'🦉',
       descEn:'Eat all the pellets and dodge the ghosts!',
       descAr:'كل كل النقاط وابعد عن الأشباح!',
     },
@@ -630,8 +630,8 @@ const T = {
     timeout:   'انتهى الوقت!',
     combo:     'مبروك! ٤ متابعة 🔥',
     newBest:   '⭐ جديد!',
-    pcTitleHTML:  'باك <span>تشيك</span>',
-    pcHint:    { easy:'٣ أشباح بطيئة', medium:'٣ أشباح', hard:'٤ أشباح سريعة' },
+    pcTitleHTML:  'باك <span>البومة</span>',
+    pcHint:    { easy:'شبحان عشوائيان 🟢', medium:'٣ أشباح ذكية 🟡', hard:'٤ أشباح متوقعة 🔴' },
     pcScore:   'نقاط',  pcLives: 'أرواح',
   },
   en: {
@@ -655,8 +655,8 @@ const T = {
     timeout:   "Time's up!",
     combo:     'Combo ×4! 🔥',
     newBest:   '⭐ NEW!',
-    pcTitleHTML:  'Pac <span>Chick</span>',
-    pcHint:    { easy:'2 ghosts (slow)', medium:'3 ghosts', hard:'4 ghosts (fast)' },
+    pcTitleHTML:  'Pac-<span>Owl</span>',
+    pcHint:    { easy:'2 random ghosts 🟢', medium:'3 smart ghosts 🟡', hard:'4 predictive ghosts 🔴' },
     pcScore:   'Score',  pcLives: 'Lives',
   },
 };
@@ -807,7 +807,7 @@ function applyLang() {
     if (bz) { bz.textContent = t.diffBadge[chosenDiff]; bz.className = 'diff-badge '+chosenDiff; }
   }
 
-  // Pac-Chick screen
+  // Pac-Owl screen
   const pcTitle = document.getElementById('pc-game-title');
   if (pcTitle) pcTitle.innerHTML = t.pcTitleHTML;
   const pcsl = document.querySelectorAll('#pacchick-screen .stat-label');
@@ -1356,7 +1356,7 @@ window.addEventListener('resize', () => {
 });
 
 /* ═══════════════════════════════════════════
-   PAC-CHICK GAME
+   PAC-OWL GAME
 ═══════════════════════════════════════════ */
 const PC_GRID = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -1516,11 +1516,61 @@ function pcChooseGhostDir(g) {
   const cands = noRev.length ? noRev : dirs.filter(d => pcCanEnter(g.col+PC_DVEC[d][0], g.row+PC_DVEC[d][1], true));
   if (!cands.length) return null;
   if (g.frightened) return cands[Math.floor(Math.random()*cands.length)];
-  // Chase: greedy toward player
+
+  // ── Easy: 25% greedy, 75% random — ghosts wander loosely ──
+  if (chosenDiff === 'easy') {
+    if (Math.random() < 0.25) {
+      let best = cands[0], bestD = Infinity;
+      for (const d of cands) {
+        const [dc,dr] = PC_DVEC[d];
+        const dist = (g.col+dc - pcPlayer.col)**2 + (g.row+dr - pcPlayer.row)**2;
+        if (dist < bestD) { bestD = dist; best = d; }
+      }
+      return best;
+    }
+    return cands[Math.floor(Math.random()*cands.length)];
+  }
+
+  // ── Medium: 70% greedy toward player, 30% random ──
+  if (chosenDiff === 'medium') {
+    if (Math.random() < 0.70) {
+      let best = cands[0], bestD = Infinity;
+      for (const d of cands) {
+        const [dc,dr] = PC_DVEC[d];
+        const dist = (g.col+dc - pcPlayer.col)**2 + (g.row+dr - pcPlayer.row)**2;
+        if (dist < bestD) { bestD = dist; best = d; }
+      }
+      return best;
+    }
+    return cands[Math.floor(Math.random()*cands.length)];
+  }
+
+  // ── Hard: each ghost has a unique AI personality ──
+  let targetCol = pcPlayer.col, targetRow = pcPlayer.row;
+  if (g.color === '#55BBFF') {
+    // Cyan (Inky): predictive — targets 4 tiles ahead of player's direction
+    const [dc, dr] = PC_DVEC[pcPlayer.dir] || [0,0];
+    targetCol = pcPlayer.col + dc * 4;
+    targetRow = pcPlayer.row + dr * 4;
+  } else if (g.color === '#FFB8DE') {
+    // Pink (Pinky): ambush — targets 2 tiles ahead of player
+    const [dc, dr] = PC_DVEC[pcPlayer.dir] || [0,0];
+    targetCol = pcPlayer.col + dc * 2;
+    targetRow = pcPlayer.row + dr * 2;
+  } else if (g.color === '#FFB84D') {
+    // Orange (Clyde): coward — chases when far (>8 tiles), scatters when close
+    const tileDist = Math.abs(g.col - pcPlayer.col) + Math.abs(g.row - pcPlayer.row);
+    if (tileDist < 8) {
+      // Scatter to home corner (bottom-left)
+      targetCol = 1; targetRow = PC_ROWS - 2;
+    }
+    // else: falls through to direct chase with targetCol/Row = player
+  }
+  // Red (Blinky) + orange(far) + others: direct chase to target
   let best = cands[0], bestD = Infinity;
   for (const d of cands) {
     const [dc,dr] = PC_DVEC[d];
-    const dist = (g.col+dc - pcPlayer.col)**2 + (g.row+dr - pcPlayer.row)**2;
+    const dist = (g.col+dc - targetCol)**2 + (g.row+dr - targetRow)**2;
     if (dist < bestD) { bestD = dist; best = d; }
   }
   return best;
@@ -1542,7 +1592,7 @@ function pcExitDir(g) {
 }
 
 // ── Main loop & update ─────────────────────────────────
-const PC_SPD = { player:0.13, ghost:{easy:0.08, medium:0.10, hard:0.13}, fright:0.055, exit:0.09 };
+const PC_SPD = { player:0.13, ghost:{easy:0.07, medium:0.10, hard:0.14}, fright:0.055, exit:0.09 };
 
 function pcLoop() {
   pcUpdate();
@@ -1724,7 +1774,7 @@ function pcRender() {
   }
 }
 
-// ── Pac-Chick scoring ──────────────────────────────────
+// ── Pac-Owl scoring ──────────────────────────────────
 function calcPacChickScore(rawScore, secs) {
   const limit = CFG.timeLimits.pacchick[chosenDiff];
   const sc = CFG.scoring.pacchick;
