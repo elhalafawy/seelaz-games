@@ -433,7 +433,7 @@
 ════════════════════════════════════════ -->
 <div id="pacchick-screen">
   <div class="game-header maze-header">
-    <div class="game-owl">�</div>
+    <div class="game-owl">&#x1F989;</div>
     <div class="game-title" id="pc-game-title">Pac-<span>Owl</span></div>
     <div class="diff-badge" id="pc-diff-badge"></div>
   </div>
@@ -625,6 +625,8 @@ const T = {
     restart:   '🔄 إعادة',  goHome: '🏠 الرئيسية',
     winTitle:  '🎉 ممتاز!',
     winSubMem: 'وجدت كل الأزواج! 🃏',  winSubMaze: 'البومة وصلت للقهوة! ☕',  winSubPacchick: 'أكلت كل النقاط! 🦉',
+    loseTitle:  '💀 خسرت!',
+    loseMsgPc:  'الأشباح أكلت البومة... حاول تاني!',
     lMoves: 'حركات',  lSteps: 'خطوات',  lTime: 'وقت',  lScore: 'نقاط',  lBest: '🏆 أفضل',
     playAgain: '☕ العب تاني',  codeLabel: 'كود الخصم',
     timeout:   'انتهى الوقت!',
@@ -650,6 +652,8 @@ const T = {
     restart:   '🔄 Restart',  goHome: '🏠 Home',
     winTitle:  '🎉 Excellent!',
     winSubMem: 'All card pairs matched! 🃏',  winSubMaze: 'The owl reached the coffee! ☕',  winSubPacchick: 'All pellets eaten! 🦉',
+    loseTitle: '💀 Game Over!',
+    loseMsgPc: 'The ghosts got the owl... Try again!',
     lMoves: 'Moves',  lSteps: 'Steps',  lTime: 'Time',  lScore: 'Score',  lBest: '🏆 Best',
     playAgain: '☕ Play Again',  codeLabel: 'Discount Code',
     timeout:   "Time's up!",
@@ -1406,8 +1410,8 @@ function initPacChick() {
   pcGameStartTime = Date.now();
 
   const numGhosts = { easy:2, medium:3, hard:4 }[chosenDiff];
-  pcPlayer = { col:10, row:16, fromCol:10, fromRow:16, toCol:10, toRow:16,
-               dir:'right', nextDir:'right', t:1, alive:true, respawnTimer:0 };
+  pcPlayer = { col:10, row:20, fromCol:10, fromRow:20, toCol:10, toRow:20,
+               dir:'left', nextDir:null, t:1, alive:true, respawnTimer:0 };
   pcGhosts = PC_GHOST_DEFS.slice(0, numGhosts).map(g => ({
     col:g.col, row:g.row, fromCol:g.col, fromRow:g.row, toCol:g.col, toRow:g.row,
     homeCol:g.col, homeRow:g.row, dir:'up', t:1,
@@ -1692,8 +1696,18 @@ function pcUpdate() {
 
 function pcLoseLife() {
   pcLives--; pcUpdateLives(); playNoMatch();
-  if (pcLives <= 0) { stopPacChick(); timeOutGame(); }
+  if (pcLives <= 0) { stopPacChick(); showPcGameOver(); return; }
   else { pcPlayer.alive = false; pcPlayer.respawnTimer = Date.now() + 1500; }
+}
+
+function showPcGameOver() {
+  const t = T[chosenLang];
+  showToast('💀', t.loseTitle);
+  setTimeout(() => {
+    const el = document.getElementById('pacchick-screen');
+    el.classList.add('game-fading');
+    setTimeout(() => { el.classList.remove('game-fading'); goToHome(); }, 650);
+  }, 1500);
 }
 
 // ── Render ─────────────────────────────────────────────
