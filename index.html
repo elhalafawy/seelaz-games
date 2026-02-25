@@ -1362,29 +1362,84 @@ window.addEventListener('resize', () => {
 /* ═══════════════════════════════════════════
    PAC-OWL GAME
 ═══════════════════════════════════════════ */
-const PC_GRID = [
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], // row 0
-  [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1], // row 1
-  [1,2,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,2,1], // row 2
-  [1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1], // row 3
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // row 4
-  [1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1], // row 5
-  [1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1], // row 6
-  [1,1,1,1,1,0,1,1,1,3,1,3,1,1,1,0,1,1,1,1,1], // row 7 — ghost door at 9,11
-  [0,0,0,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,0,0,0], // row 8 — side tunnels open
-  [1,1,1,1,1,0,1,1,3,3,3,3,3,1,1,0,1,1,1,1,1], // row 9
-  [0,0,0,0,0,0,1,1,3,3,3,3,3,1,1,0,0,0,0,0,0], // row 10 — side corridors open
-  [1,1,1,1,1,0,1,1,3,3,3,3,3,1,1,0,1,1,1,1,1], // row 11
-  [0,0,0,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,0,0,0], // row 12 — ghost house bottom = walls
-  [1,1,1,1,1,0,1,0,0,0,0,0,0,0,1,0,1,1,1,1,1], // row 13
-  [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1], // row 14
-  [1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1], // row 15
-  [1,2,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,2,1], // row 16
-  [1,1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,1,1], // row 17
-  [1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1], // row 18
-  [1,0,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1], // row 19
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // row 20
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], // row 21
+// ── Ghost house block (cols 6-14, rows 7-12) is identical in every map ──
+// 3 different maps — one is picked randomly per game session
+const PC_MAPS = [
+  // ── Map 0 : Classic ─────────────────────────────────
+  [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1],
+    [1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1],
+    [1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1],
+    [1,1,1,0,1,0,1,1,1,3,1,3,1,1,1,0,1,0,1,1,1],
+    [1,0,0,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,0,0,1],
+    [1,0,1,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,1,0,1],
+    [1,0,0,0,0,0,1,1,3,3,3,3,3,1,1,0,0,0,0,0,1],
+    [1,0,1,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,1,0,1],
+    [1,0,0,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,0,0,1],
+    [1,1,1,0,1,0,1,0,0,0,0,0,0,0,1,0,1,0,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+    [1,1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,1,1],
+    [1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1],
+    [1,0,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  ],
+  // ── Map 1 : Open Squares ────────────────────────────
+  [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+    [1,0,1,0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,1,0,1],
+    [1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,1],
+    [1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1],
+    [1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,1,0,1],
+    [1,0,1,1,1,0,1,0,0,0,1,0,0,0,1,0,1,1,1,0,1],
+    [1,0,0,0,0,0,1,1,1,3,1,3,1,1,1,0,0,0,0,0,1],
+    [1,1,1,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,1,1,1],
+    [1,0,0,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,0,0,1],
+    [1,0,1,0,0,0,1,1,3,3,3,3,3,1,1,0,0,0,1,0,1],
+    [1,0,1,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,1,0,1],
+    [1,0,0,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,0,0,1],
+    [1,1,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1],
+    [1,0,0,0,1,1,1,0,1,0,0,0,1,0,1,1,1,0,0,0,1],
+    [1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,1,0,1],
+    [1,0,1,1,1,0,1,0,0,0,0,0,0,0,1,0,1,1,1,0,1],
+    [1,0,0,0,0,0,1,1,1,0,1,0,1,1,1,0,0,0,0,0,1],
+    [1,0,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,0,1],
+    [1,0,0,0,1,1,1,0,1,0,1,0,1,0,1,1,1,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  ],
+  // ── Map 2 : Winding ────────────────────────────────
+  [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+    [1,0,1,1,0,0,1,0,1,1,1,1,1,0,1,0,0,1,1,0,1],
+    [1,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1],
+    [1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1],
+    [1,1,1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,1,1,1],
+    [1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,1],
+    [1,0,1,0,0,0,1,1,1,3,1,3,1,1,1,0,0,0,1,0,1],
+    [1,0,1,1,1,0,1,1,3,3,3,3,3,1,1,0,1,1,1,0,1],
+    [1,0,0,0,0,0,1,1,3,3,3,3,3,1,1,0,0,0,0,0,1],
+    [1,1,1,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,1,1,1],
+    [1,0,0,0,1,0,1,1,3,3,3,3,3,1,1,0,1,0,0,0,1],
+    [1,0,1,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,1,0,1],
+    [1,0,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,0,1],
+    [1,0,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,0,1],
+    [1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,0,1,1,0,1,0,1,0,1,0,1,1,0,1,1,0,1],
+    [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],
+    [1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  ],
 ];
 const PC_COLS = 21, PC_ROWS = 22;
 const PC_DVEC     = { right:[1,0], left:[-1,0], up:[0,-1], down:[0,1] };
@@ -1397,17 +1452,90 @@ const PC_GHOST_DEFS = [
 ];
 
 // State
+let pcCurrentGrid = null;
 let pcPlayer = null, pcGhosts = [], pcPellets, pcPowerPellets;
 let pcScore = 0, pcLives = 3, pcSeconds = 0;
 let pcActive = false, pcFrightened = false, pcFrightTimer = 0;
 let pcRAF = null, pcTimerID_pc = null, pcTileSize = 18;
 let pcTotalPellets = 0, pcGameStartTime = 0;
 
+// Flood-fill from (startC, startR) on a grid — returns Set of "c,r" keys
+function pcFloodFill(grid, startC, startR) {
+  const reachable = new Set();
+  if (grid[startR][startC] === 1 || grid[startR][startC] === 3) return reachable;
+  const q = [[startC, startR]];
+  while (q.length) {
+    const [c, r] = q.pop();
+    const k = `${c},${r}`;
+    if (reachable.has(k)) continue;
+    if (c < 0 || c >= PC_COLS || r < 0 || r >= PC_ROWS) continue;
+    if (grid[r][c] === 1 || grid[r][c] === 3) continue;
+    reachable.add(k);
+    q.push([c+1,r],[c-1,r],[c,r+1],[c,r-1]);
+  }
+  return reachable;
+}
+
 function initPacChick() {
   stopPacChick();
   pcScore = 0; pcLives = 3; pcSeconds = 0;
   pcActive = true; pcFrightened = false; pcFrightTimer = 0;
   pcGameStartTime = Date.now();
+
+  // Pick a random map, deep-copy so we can mutate it
+  const mapIdx = Math.floor(Math.random() * PC_MAPS.length);
+  pcCurrentGrid = PC_MAPS[mapIdx].map(row => [...row]);
+
+  // Ensure player spawn tile is open
+  pcCurrentGrid[20][10] = 0;
+
+  // Flood-fill from spawn to find all reachable path cells
+  const reachable = pcFloodFill(pcCurrentGrid, 10, 20);
+
+  // Wall off any 0-cell that is NOT reachable (disconnected pockets)
+  for (let r = 0; r < PC_ROWS; r++)
+    for (let c = 0; c < PC_COLS; c++)
+      if (pcCurrentGrid[r][c] === 0 && !reachable.has(`${c},${r}`))
+        pcCurrentGrid[r][c] = 1;
+
+  // Pellet density per difficulty
+  const density = { easy: 0.50, medium: 0.75, hard: 1.0 }[chosenDiff];
+  const reachArr = [...reachable];
+
+  // Shuffle reachable cells for random sparse placement
+  for (let i = reachArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [reachArr[i], reachArr[j]] = [reachArr[j], reachArr[i]];
+  }
+
+  const pelletCount = Math.ceil(reachArr.length * density);
+  const pelletCells = new Set(reachArr.slice(0, pelletCount));
+
+  // Place 4 power-pellets at corner-most reachable cells (one per quadrant)
+  const HALF_C = Math.floor(PC_COLS / 2), HALF_R = Math.floor(PC_ROWS / 2);
+  const quadrants = [
+    reachArr.filter(k => { const [c,r]=k.split(',').map(Number); return c < HALF_C && r < HALF_R; }),
+    reachArr.filter(k => { const [c,r]=k.split(',').map(Number); return c > HALF_C && r < HALF_R; }),
+    reachArr.filter(k => { const [c,r]=k.split(',').map(Number); return c < HALF_C && r > HALF_R; }),
+    reachArr.filter(k => { const [c,r]=k.split(',').map(Number); return c > HALF_C && r > HALF_R; }),
+  ];
+  // Sort each quadrant to pick furthest-corner cell
+  const corners = [
+    quadrants[0].sort((a,b) => { const [ac,ar]=a.split(',').map(Number); const [bc,br]=b.split(',').map(Number); return (ac+ar)-(bc+br); })[0],
+    quadrants[1].sort((a,b) => { const [ac,ar]=a.split(',').map(Number); const [bc,br]=b.split(',').map(Number); return (bc-ac+ar)-(ac-bc+br); })[0],
+    quadrants[2].sort((a,b) => { const [ac,ar]=a.split(',').map(Number); const [bc,br]=b.split(',').map(Number); return (ac-ar)-(bc-br); })[0],
+    quadrants[3].sort((a,b) => { const [ac,ar]=a.split(',').map(Number); const [bc,br]=b.split(',').map(Number); return (bc+br)-(ac+ar); })[0],
+  ].filter(Boolean);
+
+  pcPellets = new Set();
+  pcPowerPellets = new Set();
+  for (const k of pelletCells) {
+    if (corners.includes(k)) continue; // reserve for power pellet
+    pcPellets.add(k);
+  }
+  for (const k of corners) pcPowerPellets.add(k);
+
+  pcTotalPellets = pcPellets.size + pcPowerPellets.size;
 
   const numGhosts = { easy:2, medium:3, hard:4 }[chosenDiff];
   pcPlayer = { col:10, row:20, fromCol:10, fromRow:20, toCol:10, toRow:20,
@@ -1417,14 +1545,6 @@ function initPacChick() {
     homeCol:g.col, homeRow:g.row, dir:'up', t:1,
     color:g.color, delay:g.delay, inHouse:true, frightened:false, respawnTimer:0,
   }));
-
-  pcPellets = new Set(); pcPowerPellets = new Set();
-  for (let r = 0; r < PC_ROWS; r++)
-    for (let c = 0; c < PC_COLS; c++) {
-      if (PC_GRID[r][c] === 0) pcPellets.add(`${c},${r}`);
-      if (PC_GRID[r][c] === 2) pcPowerPellets.add(`${c},${r}`);
-    }
-  pcTotalPellets = pcPellets.size + pcPowerPellets.size;
 
   // Canvas sizing
   const canvas = document.getElementById('pacchick-canvas');
@@ -1479,7 +1599,7 @@ function pcDir(d) { if (pcPlayer) pcPlayer.nextDir = d; }
 // ── Tile accessibility ─────────────────────────────────
 function pcCanEnter(c, r, isGhost) {
   if (c < 0 || c >= PC_COLS || r < 0 || r >= PC_ROWS) return false;
-  const v = PC_GRID[r][c];
+  const v = pcCurrentGrid[r][c];
   if (v === 1) return false;
   if (v === 3 && !isGhost) return false;
   return true;
@@ -1668,7 +1788,7 @@ function pcUpdate() {
     if (g.inHouse) {
       if (now < pcGameStartTime + g.delay) continue; // still waiting
       pcMoveEntity(g, PC_SPD.exit, pcExitDir);
-      if (g.t >= 1 && PC_GRID[g.toRow] && PC_GRID[g.toRow][g.toCol] === 0) g.inHouse = false;
+      if (g.t >= 1 && pcCurrentGrid[g.toRow] && pcCurrentGrid[g.toRow][g.toCol] === 0) g.inHouse = false;
     } else {
       pcMoveEntity(g, g.frightened ? PC_SPD.fright : gSpd, pcChooseGhostDir);
     }
@@ -1719,15 +1839,20 @@ function pcRender() {
   ctx.fillStyle = '#100500';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Walls
+  // Walls + ghost house
   for (let r = 0; r < PC_ROWS; r++) {
     for (let c = 0; c < PC_COLS; c++) {
-      if (PC_GRID[r][c] === 1) {
+      const v = pcCurrentGrid[r][c];
+      if (v === 1) {
         ctx.fillStyle = '#2a0e00';
         ctx.fillRect(c*ts, r*ts, ts, ts);
         ctx.strokeStyle = '#7A3A14';
         ctx.lineWidth = Math.max(1, ts * 0.1);
         ctx.strokeRect(c*ts + 0.5, r*ts + 0.5, ts-1, ts-1);
+      } else if (v === 3) {
+        // Ghost house interior — subtle dark tint
+        ctx.fillStyle = '#1a0a00';
+        ctx.fillRect(c*ts, r*ts, ts, ts);
       }
     }
   }
