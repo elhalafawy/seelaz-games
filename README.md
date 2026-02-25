@@ -1,43 +1,107 @@
 # 🦉 Seelaz Games
 
-A kiosk-style browser game built for **Seelaz** coffee brand.  
-Single HTML file — zero dependencies, works offline.
+ألعاب تفاعلية للمتجر — اربح وكسب كود خصم على قهوتك من [Seelaz](https://seelaz.com)
 
-## Games
-
-### 🃏 Owl Memory
-Match all coffee card pairs before the timer runs out.  
-- 3 difficulty levels (easy / medium / hard)
-- Card preview before the round starts
-- Combo bonus for 4 consecutive matches
-
-### 🌀 Owl Maze
-Guide the owl through the maze to reach the coffee cup.  
-- 3 difficulty levels (9×9 / 13×13 / 17×17 grid)
-- Keyboard (WASD / arrows), D-pad, and touch/swipe support
-- Shortest-path scoring via BFS
-
-## Features
-- Full Arabic / English language switching
-- Speed + efficiency scoring (max 1000 pts)
-- 3-star rating system
-- Discount codes on 3-star wins (configurable %)
-- High score saved in localStorage
-- Web Audio API sound effects
-- Confetti animation on win
-- Zero external dependencies (except Google Fonts)
-
-## Usage
-Open `index.html` in any modern browser — no server needed.
-
-## Configuration
-All settings are in the `CFG` object at the top of the `<script>` block inside `index.html`:
-- Brand name, website, taglines
-- Time limits per game & difficulty
-- Pair counts and preview durations (memory)
-- Maze grid sizes
-- Discount percentages
-- Scoring weights
+**🔗 العب الآن:** [elhalafawy.github.io/seelaz-games](https://elhalafawy.github.io/seelaz-games/)
 
 ---
-Built with ❤️ for Seelaz Coffee.
+
+## الألعاب
+
+### 🃏 ذاكرة البومة — Owl Memory
+اقلب الكروت وابحث عن الأزواج قبل ما الوقت يخلص.
+- **سهل:** ٨ كروت (٤ أزواج) | **متوسط:** ١٢ كرت (٦ أزواج) | **صعب:** ١٦ كرت (٨ أزواج)
+- Preview للكروت قبل البداية + Combo bonus عند ٤ matches متتالية
+
+### 🌀 متاهة البومة — Owl Maze
+وصّل البومة للقهوة عبر المتاهة بأقل خطوات وأسرع وقت.
+- خريطة تُولد عشوائياً كل مرة مع ضمان جودة المسار (مفترقات، التواءات، مسار مركزي)
+- **سهل:** شبكة ٩×٩ | **متوسط:** ١٣×١٣ | **صعب:** ١٧×١٧
+
+### 🦉 باك البومة — Pac-Owl
+لعبة Pac-Man بشخصية البومة. اكل كل النقاط وتجنب الأشباح.
+- **٣ خرائط مختلفة** تُختار عشوائياً كل لعبة
+- **Flood-fill** يضمن إن كل نقطة قابلة للوصول
+- **كثافة النقاط حسب الصعوبة:** سهل ٥٠٪ — متوسط ٧٥٪ — صعب ١٠٠٪
+- **٤ Power Pellets** في أركان الخريطة تخلي الأشباح يخافوا مؤقتاً
+- **ذكاء الأشباح يتطور مع الصعوبة:**
+
+| المستوى | عدد الأشباح | السلوك |
+|---------|-------------|--------|
+| 🟢 سهل | ٢ | عشوائي ٧٥٪ |
+| 🟡 متوسط | ٣ | مطاردة مباشرة ٧٠٪ |
+| 🔴 صعب | ٤ | Blinky يطارد · Inky يتوقع · Pinky يكمن · Clyde جبان |
+
+---
+
+## نظام الفوز والخصومات
+
+| النجوم | الشرط |
+|--------|--------|
+| ⭐⭐⭐ | نقاط عالية + وقت سريع → كود خصم |
+| ⭐⭐ | أداء متوسط |
+| ⭐ | كمّلت اللعبة |
+
+| اللعبة | متوسط | صعب |
+|--------|--------|------|
+| ذاكرة | خصم ٥٪ | خصم ١٠٪ |
+| متاهة | خصم ٥٪ | خصم ١٠٪ |
+| باك البومة | خصم ٥٪ | خصم ١٠٪ |
+
+---
+
+## الميزات التقنية
+
+- **ملف واحد** `index.html` — صفر تبعيات خارجية
+- **ثنائي اللغة** عربي 🇸🇦 / إنجليزي 🇬🇧 مع دعم RTL كامل
+- **٣ مستويات صعوبة** لكل لعبة
+- **High Score** يُحفظ في `localStorage` لكل لعبة ومستوى
+- **تأثيرات صوتية** — Web Audio API بدون ملفات خارجية
+- **Confetti + نجوم** عند الفوز
+- **Responsive** يعمل على موبايل وديسكتوب
+- **D-pad** للتحكم باللمس + keyboard (WASD / Arrows)
+
+---
+
+## التشغيل المحلي
+
+```bash
+# فتح مباشر في المتصفح — لا يحتاج server
+start index.html        # Windows
+open index.html         # macOS
+```
+
+---
+
+## بنية المشروع
+
+```
+seelaz-games/
+└── index.html    ← كل الكود (HTML + CSS + JavaScript) في ملف واحد
+```
+
+**أقسام الكود الرئيسية:**
+
+| السطور (تقريباً) | القسم |
+|------------------|--------|
+| 1–480 | HTML (شاشات اللعب، D-pad، Win screen) |
+| 481–670 | `CFG` (إعدادات) + `T` (ترجمات عربي/إنجليزي) |
+| 671–930 | Navigation + Language engine |
+| 931–1110 | لعبة الذاكرة (Memory) |
+| 1111–1360 | لعبة المتاهة (Maze) — maze generator + BFS |
+| 1361–1910 | لعبة باك البومة (Pac-Owl) — 3 maps + flood-fill + ghost AI |
+| 1911–نهاية | Win screen + Audio (Web Audio API) + Confetti |
+
+### إعدادات `CFG` القابلة للتعديل
+```js
+CFG.brand           // اسم البراند
+CFG.timeLimits      // وقت كل لعبة ومستوى
+CFG.discount        // نسبة الخصم لكل لعبة ومستوى
+CFG.scoring         // أوزان حساب النقاط
+CFG.memPairs        // عدد الأزواج في لعبة الذاكرة
+CFG.mazeSize        // حجم الشبكة في المتاهة
+```
+
+---
+
+Built with ❤️ for **Seelaz Coffee** ☕
