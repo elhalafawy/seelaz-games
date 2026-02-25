@@ -1539,7 +1539,7 @@ function initPacChick() {
 
   const numGhosts = { easy:2, medium:3, hard:4 }[chosenDiff];
   pcPlayer = { col:10, row:20, fromCol:10, fromRow:20, toCol:10, toRow:20,
-               dir:'left', nextDir:null, t:1, alive:true, respawnTimer:0 };
+               dir:null, nextDir:null, t:1, alive:true, respawnTimer:0 };
   pcGhosts = PC_GHOST_DEFS.slice(0, numGhosts).map(g => ({
     col:g.col, row:g.row, fromCol:g.col, fromRow:g.row, toCol:g.col, toRow:g.row,
     homeCol:g.col, homeRow:g.row, dir:'up', t:1,
@@ -1621,17 +1621,31 @@ function pcMoveEntity(e, speed, chooseDirFn) {
   }
 }
 
-// Pure stop-on-tile: press direction → move once → stop.
-// nextDir stays buffered until the move succeeds (wall relief).
+// Classic Pac-Man buffered turning:
+// - Owl keeps sliding in current direction automatically
+// - Press a new direction → it gets buffered (nextDir)
+// - At every tile: try buffered turn first; if open → turn + consume buffer
+// - If buffered dir is blocked → keep current direction
+// - If current dir is also blocked (wall ahead) → stop and wait
 function pcChoosePlayerDir(p) {
-  if (!p.nextDir) return null;  // no input — stay still
-  const [dc, dr] = PC_DVEC[p.nextDir];
-  if (pcCanEnter(p.col + dc, p.row + dr, false)) {
-    p.dir = p.nextDir;
-    p.nextDir = null;  // consume after successful move
-    return p.dir;
+  // 1. Try buffered turn
+  if (p.nextDir) {
+    const [dc, dr] = PC_DVEC[p.nextDir];
+    if (pcCanEnter(p.col + dc, p.row + dr, false)) {
+      p.dir = p.nextDir;
+      p.nextDir = null;  // consume — turn succeeded
+      return p.dir;
+    }
   }
-  return null;  // wall — stay put, keep nextDir buffered
+  // 2. Keep sliding in current direction
+  if (p.dir) {
+    const [dc, dr] = PC_DVEC[p.dir];
+    if (pcCanEnter(p.col + dc, p.row + dr, false)) {
+      return p.dir;
+    }
+  }
+  // 3. Dead end — stop (nextDir stays buffered for when it opens)
+  return null;
 }
 
 function pcChooseGhostDir(g) {
@@ -1739,7 +1753,7 @@ function pcUpdate() {
       pcPlayer.alive = true;
       pcPlayer.col = pcPlayer.fromCol = pcPlayer.toCol = 10;
       pcPlayer.row = pcPlayer.fromRow = pcPlayer.toRow = 20;
-      pcPlayer.dir = 'left'; pcPlayer.nextDir = null; pcPlayer.t = 1;
+      pcPlayer.dir = null; pcPlayer.nextDir = null; pcPlayer.t = 1;
       pcGhosts.forEach(g => {
         g.col = g.homeCol; g.row = g.homeRow;
         g.fromCol = g.homeCol; g.fromRow = g.homeRow;
