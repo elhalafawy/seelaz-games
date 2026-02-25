@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -445,7 +445,7 @@
     </div>
     <div class="stat-box">
       <div class="stat-label" id="pc-lbl-lives">أرواح</div>
-      <div class="stat-value" id="pc-lives-val">🦆🦆🦆</div>
+      <div class="stat-value" id="pc-lives-val">&#x1F989;&#x1F989;&#x1F989;</div>
     </div>
     <div class="stat-box">
       <div class="stat-label" id="pc-lbl-time">وقت</div>
@@ -1447,7 +1447,7 @@ function initPacChick() {
 }
 
 function pcUpdateLives() {
-  document.getElementById('pc-lives-val').textContent = '🦆'.repeat(Math.max(0, pcLives));
+  document.getElementById('pc-lives-val').textContent = '�'.repeat(Math.max(0, pcLives));
 }
 
 function pcTick() {
@@ -1497,28 +1497,26 @@ function pcMoveEntity(e, speed, chooseDirFn) {
   }
 }
 
-// Classic Pac-Man movement:
-// - Try buffered turn first; if clear → apply it
-// - Otherwise keep sliding in current direction
-// - nextDir stays buffered until the turn is possible
+// Stop-on-tile movement:
+// - Only moves when player presses a direction (nextDir set)
+// - nextDir stays buffered if direction is blocked (wall)
+// - nextDir consumed only when move succeeds
 function pcChoosePlayerDir(p) {
-  // 1. Try the buffered (new) direction
-  if (p.nextDir) {
-    const [dc, dr] = PC_DVEC[p.nextDir];
-    if (pcCanEnter(p.col + dc, p.row + dr, false)) {
-      p.dir = p.nextDir;
-      p.nextDir = null;
-      return p.dir;
+  if (!p.nextDir) return null;  // no input — stay put
+  const [dc, dr] = PC_DVEC[p.nextDir];
+  if (pcCanEnter(p.col + dc, p.row + dr, false)) {
+    p.dir = p.nextDir;
+    p.nextDir = null;  // consume only on success
+    return p.dir;
+  }
+  // Also try current direction if nextDir is blocked (feels less sticky)
+  if (p.dir && p.dir !== p.nextDir) {
+    const [dc2, dr2] = PC_DVEC[p.dir];
+    if (pcCanEnter(p.col + dc2, p.row + dr2, false)) {
+      return p.dir;  // keep sliding, nextDir stays buffered for next junction
     }
   }
-  // 2. Continue in current direction
-  if (p.dir) {
-    const [dc, dr] = PC_DVEC[p.dir];
-    if (pcCanEnter(p.col + dc, p.row + dr, false)) {
-      return p.dir;
-    }
-  }
-  return null; // wall in both directions — stay put
+  return null;
 }
 
 function pcChooseGhostDir(g) {
@@ -1750,7 +1748,8 @@ function pcRender() {
   }
 
   // Emoji font for player + frightened ghosts
-  const ef = `${Math.max(8, Math.round(ts*0.82))}px serif`;
+  const ef = `${Math.max(10, Math.round(ts*0.85))}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
+  const pfont = `${Math.max(12, Math.round(ts*1.05))}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
   // Ghosts
@@ -1778,9 +1777,9 @@ function pcRender() {
   if (pcPlayer && pcPlayer.alive) {
     const px = (pcPlayer.fromCol + (pcPlayer.toCol-pcPlayer.fromCol)*pcPlayer.t)*ts + ts/2;
     const py = (pcPlayer.fromRow + (pcPlayer.toRow-pcPlayer.fromRow)*pcPlayer.t)*ts + ts/2;
-    ctx.font = ef;
+    ctx.font = pfont;
     ctx.shadowColor = '#FFD700'; ctx.shadowBlur = ts*0.4;
-    ctx.fillText('�', px, py);
+    ctx.fillText('🦉', px, py);
     ctx.shadowBlur = 0;
   }
 }
