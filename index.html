@@ -577,9 +577,15 @@ const CFG = {
   // ── Scoring: speed 60% + efficiency 40% = max 1000 pts ──
   scoring: {
     memory:   { speedWeight:600, effWeight:400, mistakePenalty:30 },
-    maze:     { speedWeight:600, effWeight:400, extraStepPenalty:6 },
-    pacchick: { speedWeight:300, pelletsWeight:700 },  // speed 30% + pellets 70%
-    starThresholds: [820, 580],  // [3-star min, 2-star min]
+    maze:     { speedWeight:500, effWeight:500 },  // ratio-based efficiency (no per-step penalty)
+    pacchick: { speedWeight:300, pelletsWeight:700,
+                playerRespawnMs:1500, ghostRespawnMs:4000 },
+    // Per-game 3-star / 2-star thresholds (out of 1000)
+    starThresholds: {
+      memory:   [820, 580],
+      maze:     [680, 430],   // maze is harder to judge — more generous
+      pacchick: [820, 580],
+    },
   },
 
 };
@@ -1011,7 +1017,7 @@ function calcMemScore(moves, secs) {
 }
 function calcMemStars(moves, secs) {
   const sc = calcMemScore(moves, secs);
-  const [t3, t2] = CFG.scoring.starThresholds;
+  const [t3, t2] = CFG.scoring.starThresholds.memory;
   return sc >= t3 ? 3 : sc >= t2 ? 2 : 1;
 }
 
@@ -1271,6 +1277,18 @@ let _tx=0, _ty=0;
   },{passive:true});
 })();
 
+// Swipe on Pac-Owl canvas
+let _pcTx=0, _pcTy=0;
+(function(){
+  const c = document.getElementById('pacchick-canvas');
+  c.addEventListener('touchstart', e=>{ _pcTx=e.touches[0].clientX; _pcTy=e.touches[0].clientY; },{passive:true});
+  c.addEventListener('touchend', e=>{
+    const dx=e.changedTouches[0].clientX-_pcTx, dy=e.changedTouches[0].clientY-_pcTy;
+    if (Math.abs(dx)<12 && Math.abs(dy)<12) return;
+    if (Math.abs(dx)>Math.abs(dy)) pcDir(dx>0?'right':'left'); else pcDir(dy>0?'down':'up');
+  },{passive:true});
+})();
+
 function mazeMove(dir) {
   if (document.getElementById('win-screen').classList.contains('show')) return;
   const dmap = {N:{dc:0,dr:-1},S:{dc:0,dr:1},E:{dc:1,dr:0},W:{dc:-1,dr:0}};
@@ -1351,7 +1369,7 @@ function calcMazeScore(steps, secs) {
 }
 function calcMazeStars(steps, secs) {
   const sc = calcMazeScore(steps, secs);
-  const [t3, t2] = CFG.scoring.starThresholds;
+  const [t3, t2] = CFG.scoring.starThresholds.maze;
   return sc >= t3 ? 3 : sc >= t2 ? 2 : 1;
 }
 
@@ -1453,6 +1471,7 @@ const PC_GHOST_DEFS = [
 
 // State
 let pcCurrentGrid = null;
+let pcWallCanvas  = null;   // offscreen canvas — static walls baked once per init
 let pcPlayer = null, pcGhosts = [], pcPellets, pcPowerPellets;
 let pcScore = 0, pcLives = 3, pcSeconds = 0;
 let pcActive = false, pcFrightened = false, pcFrightTimer = 0;
@@ -1531,9 +1550,13 @@ function initPacChick() {
   pcPowerPellets = new Set();
   for (const k of pelletCells) {
     if (corners.includes(k)) continue; // reserve for power pellet
-    pcPellets.add(k);
+    const [pc, pr] = k.split(',').map(Number);
+    pcPellets.add(pr * PC_COLS + pc);           // store as single integer
   }
-  for (const k of corners) pcPowerPellets.add(k);
+  for (const k of corners) {
+    const [pc, pr] = k.split(',').map(Number);
+    pcPowerPellets.add(pr * PC_COLS + pc);
+  }
 
   pcTotalPellets = pcPellets.size + pcPowerPellets.size;
 
@@ -1552,6 +1575,7 @@ function initPacChick() {
   pcTileSize = Math.floor(maxW / PC_COLS);
   canvas.width  = pcTileSize * PC_COLS;
   canvas.height = pcTileSize * PC_ROWS;
+  pcBuildWallCanvas();          // bake static walls into offscreen canvas
 
   // UI
   const limit = CFG.timeLimits.pacchick[chosenDiff];
@@ -1730,7 +1754,10 @@ function pcExitDir(g) {
 }
 
 // ── Main loop & update ─────────────────────────────────
-const PC_SPD = { player:0.13, ghost:{easy:0.07, medium:0.10, hard:0.14}, fright:0.055, exit:0.09 };
+// Tile-fraction advanced per animation frame (60 fps).
+// player≈0.09 → ~11 frames/tile = comfortable control feel
+// hard ghosts track at same tile-speed as player (challenging but fair)
+const PC_SPD = { player:0.09, ghost:{easy:0.045, medium:0.065, hard:0.09}, fright:0.04, exit:0.06 };
 
 function pcLoop() {
   pcUpdate();
@@ -1767,8 +1794,8 @@ function pcUpdate() {
   // Player move
   pcMoveEntity(pcPlayer, PC_SPD.player, pcChoosePlayerDir);
 
-  // Eat pellets at landed tile
-  const key = `${pcPlayer.col},${pcPlayer.row}`;
+  // Eat pellets at landed tile (int key = row*PC_COLS + col)
+  const key = pcPlayer.row * PC_COLS + pcPlayer.col;
   if (pcPellets.has(key)) {
     pcPellets.delete(key); pcScore += 10;
     document.getElementById('pc-score-val').textContent = pcScore;
@@ -1817,7 +1844,7 @@ function pcUpdate() {
     const gy = g.fromRow + (g.toRow - g.fromRow) * g.t;
     if (Math.abs(px - gx) < 0.72 && Math.abs(py - gy) < 0.72) {
       if (g.frightened) {
-        g.frightened = false; g.respawnTimer = now + 4000;
+        g.frightened = false; g.respawnTimer = now + CFG.scoring.pacchick.ghostRespawnMs;
         pcScore += 200;
         document.getElementById('pc-score-val').textContent = pcScore;
         playMatch();
@@ -1831,7 +1858,7 @@ function pcUpdate() {
 function pcLoseLife() {
   pcLives--; pcUpdateLives(); playNoMatch();
   if (pcLives <= 0) { stopPacChick(); showPcGameOver(); return; }
-  else { pcPlayer.alive = false; pcPlayer.respawnTimer = Date.now() + 1500; }
+  else { pcPlayer.alive = false; pcPlayer.respawnTimer = Date.now() + CFG.scoring.pacchick.playerRespawnMs; }
 }
 
 function showPcGameOver() {
@@ -1845,15 +1872,14 @@ function showPcGameOver() {
 }
 
 // ── Render ─────────────────────────────────────────────
-function pcRender() {
-  const canvas = document.getElementById('pacchick-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const ts = pcTileSize;
+// Pre-bake static walls + background into pcWallCanvas once per init/resize
+function pcBuildWallCanvas() {
+  pcWallCanvas = document.createElement('canvas');
+  pcWallCanvas.width  = pcTileSize * PC_COLS;
+  pcWallCanvas.height = pcTileSize * PC_ROWS;
+  const ctx = pcWallCanvas.getContext('2d'), ts = pcTileSize;
   ctx.fillStyle = '#100500';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Walls + ghost house
+  ctx.fillRect(0, 0, pcWallCanvas.width, pcWallCanvas.height);
   for (let r = 0; r < PC_ROWS; r++) {
     for (let c = 0; c < PC_COLS; c++) {
       const v = pcCurrentGrid[r][c];
@@ -1864,27 +1890,35 @@ function pcRender() {
         ctx.lineWidth = Math.max(1, ts * 0.1);
         ctx.strokeRect(c*ts + 0.5, r*ts + 0.5, ts-1, ts-1);
       } else if (v === 3) {
-        // Ghost house interior — subtle dark tint
         ctx.fillStyle = '#1a0a00';
         ctx.fillRect(c*ts, r*ts, ts, ts);
       }
     }
   }
+}
 
-  // Pellets
+function pcRender() {
+  const canvas = document.getElementById('pacchick-canvas');
+  if (!canvas || !pcWallCanvas) return;
+  const ctx = canvas.getContext('2d'), ts = pcTileSize;
+
+  // Background + walls from pre-baked offscreen canvas (no per-frame wall loop)
+  ctx.drawImage(pcWallCanvas, 0, 0);
+
+  // Pellets (stored as integers: key = row*PC_COLS + col)
   ctx.fillStyle = '#F4A840';
   for (const k of pcPellets) {
-    const [c,r] = k.split(',').map(Number);
+    const c = k % PC_COLS, r = (k / PC_COLS) | 0;
     ctx.beginPath();
     ctx.arc(c*ts + ts/2, r*ts + ts/2, ts*0.11, 0, Math.PI*2);
     ctx.fill();
   }
 
-  // Power pellets (blinking every 400ms)
-  if (Math.floor(Date.now()/400)%2 === 0) {
+  // Power pellets (blinking every 400 ms)
+  if (Math.floor(Date.now()/400) % 2 === 0) {
     ctx.fillStyle = '#FFD700';
     for (const k of pcPowerPellets) {
-      const [c,r] = k.split(',').map(Number);
+      const c = k % PC_COLS, r = (k / PC_COLS) | 0;
       ctx.beginPath();
       ctx.arc(c*ts + ts/2, r*ts + ts/2, ts*0.28, 0, Math.PI*2);
       ctx.fill();
@@ -1955,7 +1989,7 @@ function calcPacChickScore(rawScore, secs) {
 }
 function calcPacChickStars(rawScore, secs) {
   const sc = calcPacChickScore(rawScore, secs);
-  const [t3, t2] = CFG.scoring.starThresholds;
+  const [t3, t2] = CFG.scoring.starThresholds.pacchick;
   return sc >= t3 ? 3 : sc >= t2 ? 2 : 1;
 }
 
@@ -1965,6 +1999,7 @@ window.addEventListener('resize', () => {
     const maxW = Math.min(window.innerWidth-44, 420);
     pcTileSize = Math.floor(maxW/PC_COLS);
     canvas.width = pcTileSize*PC_COLS; canvas.height = pcTileSize*PC_ROWS;
+    pcBuildWallCanvas();
     pcRender();
   }
 });
